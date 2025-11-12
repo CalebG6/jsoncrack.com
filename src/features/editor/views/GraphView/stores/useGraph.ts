@@ -1,5 +1,6 @@
 import type { ViewPort } from "react-zoomable-ui/dist/ViewPort";
 import type { CanvasDirection } from "reaflow/dist/layout/elkLayout";
+import type { NodeRow } from "../../../../../types/graph";
 import { create } from "zustand";
 import { SUPPORTED_LIMIT } from "../../../../../constants/graph";
 import useJson from "../../../../../store/useJson";
@@ -43,6 +44,7 @@ interface GraphActions {
   centerView: () => void;
   clearGraph: () => void;
   setZoomFactor: (zoomFactor: number) => void;
+  updateNode: (id: string, newText: NodeRow[]) => void;
 }
 
 const useGraph = create<Graph & GraphActions>((set, get) => ({
@@ -86,21 +88,33 @@ const useGraph = create<Graph & GraphActions>((set, get) => ({
     const viewPort = get().viewPort;
     viewPort?.camera?.recenter(viewPort.centerX, viewPort.centerY, viewPort.zoomFactor + 0.1);
   },
-  zoomOut: () => {
-    const viewPort = get().viewPort;
-    viewPort?.camera?.recenter(viewPort.centerX, viewPort.centerY, viewPort.zoomFactor - 0.1);
-  },
-  centerView: () => {
-    const viewPort = get().viewPort;
-    viewPort?.updateContainerSize();
+zoomOut: () => {
+  const viewPort = get().viewPort;
+  viewPort?.camera?.recenter(viewPort.centerX, viewPort.centerY, viewPort.zoomFactor - 0.1);
+},
+centerView: () => {
+  const viewPort = get().viewPort;
+  viewPort?.updateContainerSize();
 
-    const canvas = document.querySelector(".jsoncrack-canvas") as HTMLElement | null;
-    if (canvas) {
-      viewPort?.camera?.centerFitElementIntoView(canvas);
-    }
-  },
-  toggleFullscreen: fullscreen => set({ fullscreen }),
-  setViewPort: viewPort => set({ viewPort }),
+  const canvas = document.querySelector(".jsoncrack-canvas") as HTMLElement | null;
+  if (canvas) {
+    viewPort?.camera?.centerFitElementIntoView(canvas);
+  }
+},
+updateNode: (id: string, newText: NodeRow[]) => {
+  set(state => {
+    const nodes = state.nodes.map(n =>
+      n.id === id ? { ...n, text: newText } : n
+    );
+    const selectedNode =
+      state.selectedNode && state.selectedNode.id === id
+        ? { ...state.selectedNode, text: newText }
+        : state.selectedNode;
+    return { nodes, selectedNode };
+  });
+},
+toggleFullscreen: (fullscreen) => set({ fullscreen }),
+setViewPort: (viewPort) => set({ viewPort }),
 }));
 
 export default useGraph;
